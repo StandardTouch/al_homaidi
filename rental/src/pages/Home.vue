@@ -1,7 +1,5 @@
 <template>
-    <h1 class="text-primary">Home</h1>
+    <div>
+        <h1>starter page</h1>
+    </div>
 </template>
-
-<script setup>
-
-</script>

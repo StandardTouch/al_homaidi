@@ -9,6 +9,7 @@
     "copy-html-entry": "cp ../al_homaidi/public/rental/index.html ../al_homaidi/www/rental.html"
   },
   "dependencies": {
+    "@vueuse/head": "^2.0.0",
     "feather-icons": "^4.28.0",
     "frappe-ui": "^0.1.62",
     "markdown-it": "^14.1.0",

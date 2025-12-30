@@ -1,5 +1,3 @@
-import './index.css'
-
 import { createApp } from 'vue'
 import router from './router'
 import App from './App.vue'
@@ -28,6 +26,15 @@ import '@/assets/css/app.css';
 // perfect scrollbar
 import { PerfectScrollbarPlugin } from 'vue3-perfect-scrollbar';
 app.use(PerfectScrollbarPlugin);
+
+//vue-meta
+import { createHead } from '@vueuse/head';
+const head = createHead();
+app.use(head);
+
+// set default settings
+import appSetting from '@/app-setting';
+appSetting.init();
 
 // popper
 import Popper from 'vue3-popper';
