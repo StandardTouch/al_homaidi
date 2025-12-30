@@ -1,0 +1,29 @@
+{
+  "name": "frappe-ui-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build --base=/assets/al_homaidi/rental/ && yarn copy-html-entry",
+    "preview": "vite preview",
+    "copy-html-entry": "cp ../al_homaidi/public/rental/index.html ../al_homaidi/www/rental.html"
+  },
+  "dependencies": {
+    "feather-icons": "^4.28.0",
+    "frappe-ui": "^0.1.62",
+    "markdown-it": "^14.1.0",
+    "pinia": "^3.0.4",
+    "vue": "^3.4.29",
+    "vue-router": "^4.0.12",
+    "vue3-popper": "^1.5.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.11",
+    "@tailwindcss/typography": "^0.5.19",
+    "@vitejs/plugin-vue": "^2.0.0",
+    "autoprefixer": "^10.4.2",
+    "postcss": "^8.4.5",
+    "tailwindcss": "^3.0.15",
+    "vite": "^2.7.2"
+  }
+}
