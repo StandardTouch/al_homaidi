@@ -1,31 +1,37 @@
 {
-  "name": "frappe-ui-frontend",
+  "name": "al_homaidi-rental",
   "private": true,
   "version": "0.0.0",
+  "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --base=/assets/al_homaidi/rental/ && yarn copy-html-entry",
+    "watch": "vite build --watch --base=/assets/al_homaidi/rental/",
+    "build": "vite build --base=/assets/al_homaidi/rental/ && yarn copy-html-entry && yarn copy-colors-json",
     "preview": "vite preview",
-    "copy-html-entry": "cp ../al_homaidi/public/rental/index.html ../al_homaidi/www/rental.html"
+    "copy-html-entry": "cp ../al_homaidi/public/rental/index.html ../al_homaidi/www/rental.html",
+    "copy-colors-json": "cp node_modules/frappe-ui/src/tailwind/colors.json src/utils/frappe-ui-colors.json"
   },
   "dependencies": {
-    "@vueuse/head": "^2.0.0",
-    "feather-icons": "^4.28.0",
-    "frappe-ui": "^0.1.62",
-    "markdown-it": "^14.1.0",
-    "pinia": "^3.0.4",
-    "vue": "^3.4.29",
-    "vue-router": "^4.0.12",
-    "vue3-perfect-scrollbar": "^2.0.0",
-    "vue3-popper": "^1.5.0"
+    "@vueuse/core": "10.4.1",
+    "@vueuse/router": "12.7.0",
+    "dayjs": "^1.11.19",
+    "feather-icons": "4.28.0",
+    "frappe-ui": "0.1.227",
+    "lucide-vue-next": "0.383.0",
+    "pinia": "2.0.33",
+    "typescript": "5.7.2",
+    "vue": "^3.5.0",
+    "vue-router": "4.2.2"
   },
   "devDependencies": {
-    "@tailwindcss/forms": "^0.5.11",
-    "@tailwindcss/typography": "^0.5.19",
-    "@vitejs/plugin-vue": "^2.0.0",
-    "autoprefixer": "^10.4.2",
-    "postcss": "^8.4.5",
-    "tailwindcss": "^3.0.15",
-    "vite": "^2.7.2"
+    "@vitejs/plugin-vue": "5.0.3",
+    "autoprefixer": "10.4.2",
+    "postcss": "8.4.5",
+    "tailwindcss": "^3.4.15",
+    "unplugin-auto-import": "^20.3.0",
+    "vite": "5.0.11"
+  },
+  "resolutions": {
+    "@iconify/utils": "2.1.7"
   }
 }

@@ -1,27 +1,19 @@
 <template>
-    <div
-        class="main-section antialiased relative font-nunito text-sm font-normal"
-        :class="[store.sidebar ? 'toggle-sidebar' : '', store.menu, store.layout, store.rtlClass]"
-    >
-        <component v-bind:is="mainLayout"></component>
-    </div>
+	<FrappeUIProvider>
+		<Layout class="isolate text-base">
+			<router-view />
+		</Layout>
+		<Dialogs />
+	</FrappeUIProvider>
 </template>
+<script setup>
+import { FrappeUIProvider } from 'frappe-ui'
+import { Dialogs } from '@/utils/dialogs'
+import { computed} from 'vue'
+import DesktopLayout from './components/DesktopLayout.vue'
 
-<script lang="ts" setup>
-    import { computed } from 'vue';
+const Layout = computed(() => {
+	return DesktopLayout
+})
 
-    import appLayout from '@/layouts/app-layout.vue';
-    import authLayout from '@/layouts/auth-layout.vue';
-
-    import { useAppStore } from '@/stores/index';
-    import { useMeta } from '@/composables/use-meta';
-
-    const store = useAppStore();
-
-    // meta
-    useMeta({ title: 'Dashboard' });
-
-    const mainLayout = computed(() => {
-        return store.mainLayout === 'auth' ? authLayout : appLayout;
-    });
 </script>
