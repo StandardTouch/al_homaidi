@@ -10,6 +10,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AppSidebar: typeof import('./src/components/Sidebar/AppSidebar.vue')['default']
     CollapseSidebar: typeof import('./src/components/Icons/CollapseSidebar.vue')['default']
+    CreateShop: typeof import('./src/components/Shop/CreateShop.vue')['default']
     DashboardStats: typeof import('./src/components/DashboardStats.vue')['default']
     DesktopLayout: typeof import('./src/components/DesktopLayout.vue')['default']
     EditProfile: typeof import('./src/components/Modals/EditProfile.vue')['default']

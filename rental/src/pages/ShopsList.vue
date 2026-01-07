@@ -6,9 +6,7 @@
 				label: 'New Shop',
 				icon: 'users',
 				onClick() {
-					router.push({
-						name: 'ShopForm',
-					})
+					onClickCreateShop()
 				},
 			},
 			{
@@ -65,6 +63,10 @@
 		</div>
 		<ShopListingTable :items="shopListingsData" :loading="loading" />
 	</div>
+	<CreateShop
+		v-model="showCreateShopModal"
+		:onSuccess="fetchShopListings"
+	/>
 </template>
 <script setup>
 import {
@@ -76,6 +78,7 @@ import {
 } from 'frappe-ui'
 import { ChevronDown, Plus } from 'lucide-vue-next'
 import ShopListingTable from '@/components/Shop/ShopListingTable.vue';
+import CreateShop from '@/components/Shop/CreateShop.vue';
 import { ref, onMounted } from 'vue'
 import router from '@/router'
 
@@ -107,6 +110,11 @@ const breadcrumbs = ref([
 
 const shopListingsData = ref([])
 const loading = ref(false)
+const showCreateShopModal = ref(false)
+
+const onClickCreateShop = () => {
+	showCreateShopModal.value = true
+}
 
 const fetchShopListings = async () => {
 	loading.value = true

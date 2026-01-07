@@ -2,35 +2,56 @@
 	<div class="p-2">
 		<Dropdown :options="userDropdownOptions">
 			<template v-slot="{ open, close }">
-				<button class="flex h-12 py-2 items-center rounded-md duration-300 ease-in-out" :class="isCollapsed
-						? 'px-0 w-auto'
-						: open
+				<button
+					class="flex h-12 py-2 items-center rounded-md duration-300 ease-in-out"
+					:class="
+						isCollapsed
+							? 'px-0 w-auto'
+							: open
 							? 'bg-surface-white shadow-sm px-2 w-52'
 							: 'hover:bg-surface-gray-3 px-2 w-52'
-					">
-					<img v-if="branding.data?.banner_image" :src="branding.data?.banner_image.file_url"
-						class="w-8 h-8 rounded flex-shrink-0" />
+					"
+				>
+					<img
+						v-if="userResource.data?.user_image"
+						:src="userResource.data.user_image"
+						class="w-8 h-8 rounded-full flex-shrink-0 object-cover"
+						alt="User Profile"
+					/>
 					<RentalLogo v-else class="w-8 h-8 rounded flex-shrink-0" />
-					<div class="flex flex-1 flex-col text-left duration-300 ease-in-out" :class="isCollapsed
-							? 'opacity-0 ml-0 w-0 overflow-hidden'
-							: 'opacity-100 ml-2 w-auto'
-						">
+					<div
+						class="flex flex-1 flex-col text-left duration-300 ease-in-out"
+						:class="
+							isCollapsed
+								? 'opacity-0 ml-0 w-0 overflow-hidden'
+								: 'opacity-100 ml-2 w-auto'
+						"
+					>
 						<div class="text-base font-medium text-ink-gray-9 leading-none">
-							<span v-if="
-								branding.data?.app_name && branding.data?.app_name != 'Rental'
-							">
+							<span
+								v-if="
+									branding.data?.app_name && branding.data?.app_name != 'Rental'
+								"
+							>
 								{{ branding.data?.app_name }}
 							</span>
 							<span v-else> Alhomaidhi Rental </span>
 						</div>
-						<div v-if="userResource.data" class="mt-1 text-sm text-ink-gray-7 leading-none">
+						<div
+							v-if="userResource.data"
+							class="mt-1 text-sm text-ink-gray-7 leading-none"
+						>
 							{{ convertToTitleCase(userResource.data?.full_name) }}
 						</div>
 					</div>
-					<div class="duration-300 ease-in-out" :class="isCollapsed
-							? 'opacity-0 ml-0 w-0 overflow-hidden'
-							: 'opacity-100 ml-2 w-auto'
-						">
+					<div
+						class="duration-300 ease-in-out"
+						:class="
+							isCollapsed
+								? 'opacity-0 ml-0 w-0 overflow-hidden'
+								: 'opacity-100 ml-2 w-auto'
+						"
+					>
 						<ChevronDown class="h-4 w-4 text-ink-gray-7" />
 					</div>
 				</button>
@@ -39,7 +60,7 @@
 	</div>
 	<EditProfile
 		v-model="showProfileModal"
-		v-model:profile="profile"
+		v-model:reloadProfile="profile"
 		:profile="profile"
 	/>
 </template>
@@ -54,7 +75,6 @@ import { useSettings } from '@/stores/settings'
 import { storeToRefs } from 'pinia'
 import { ref, computed } from 'vue'
 import RentalLogo from '@/components/Icons/RentalLogo.vue'
-
 import {
 	ChevronDown,
 	LogIn,
@@ -68,12 +88,12 @@ import { createResource } from 'frappe-ui'
 
 const router = useRouter()
 const { logout, branding } = sessionStore()
-const  { userResource } = usersStore()
-const { isLoggedIn } = sessionStore()
+let { userResource } = usersStore()
 const settingsStore = useSettings()
+let { isLoggedIn } = sessionStore()
+const showProfileModal = ref(false)
 const { theme } = storeToRefs(settingsStore)
 const { toggleTheme } = settingsStore
-const showProfileModal = ref(false);
 
 const props = defineProps({
 	isCollapsed: {
@@ -82,17 +102,15 @@ const props = defineProps({
 	},
 })
 
-
 const profile = createResource({
 	url: 'al_homaidi.homaidi.api.get_user_info',
 	onError(error) {
 		if (error && error.exc_type === 'AuthenticationError') {
 			window.location.href = '/login'
-		} 
+		}
 	},
 	auto: true,
 })
-
 
 const userDropdownOptions = computed(() => {
 	return [
@@ -103,7 +121,6 @@ const userDropdownOptions = computed(() => {
 					icon: User,
 					label: 'My Profile',
 					onClick: () => {
-						// router.push(`/user/${userResource.data?.username}`)
 						showProfileModal.value = true
 					},
 					condition: () => {
@@ -143,5 +160,4 @@ const userDropdownOptions = computed(() => {
 		},
 	]
 })
-
 </script>

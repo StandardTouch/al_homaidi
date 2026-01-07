@@ -7,4 +7,5 @@ node_modules
 vristo-vue-starter
 vristo-vue-main
 rental-old
+rental/lms
 __pycache__

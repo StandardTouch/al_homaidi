@@ -33,7 +33,16 @@ export function getFileSize(file_size) {
 }
 
 
+import DOMPurify from 'dompurify'
+
+export const decodeEntities = (encodedString) => {
+	const textarea = document.createElement('textarea')
+	textarea.innerHTML = encodedString
+	return textarea.value
+}
+
 export const sanitizeHTML = (text) => {
+	if (!text) return ''
 	text = DOMPurify.sanitize(decodeEntities(text), {
 		ALLOWED_TAGS: [
 			'b',
