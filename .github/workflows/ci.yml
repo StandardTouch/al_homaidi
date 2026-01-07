@@ -70,7 +70,20 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential python3-dev libffi-dev libssl-dev git
+          sudo apt-get install -y \
+            build-essential \
+            python3-dev \
+            libffi-dev \
+            libssl-dev \
+            git \
+            libmysqlclient-dev \
+            postgresql-client \
+            wget \
+            curl \
+            npm
+      - name: Upgrade pip and setuptools
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
       - name: Setup
         run: |
           pip install frappe-bench
