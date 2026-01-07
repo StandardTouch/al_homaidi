@@ -66,22 +66,37 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential python3-dev libffi-dev libssl-dev git libmysqlclient-dev postgresql-client wget curl mysql-client npm
-      - name: Install Python build tools
+          sudo apt-get install -y \
+            build-essential \
+            python3-dev \
+            libffi-dev \
+            libssl-dev \
+            git \
+            libmysqlclient-dev \
+            postgresql-client \
+            wget \
+            curl \
+            mysql-client \
+            npm
+      - name: Setup Python environment
         run: |
+          python -m venv ~/frappe-env
+          source ~/frappe-env/bin/activate
           python -m pip install --upgrade pip
-          pip install setuptools==59.6.0 wheel flit-core
+          pip install setuptools==59.6.0 wheel
       - name: Setup Frappe
         run: |
+          source ~/frappe-env/bin/activate
           pip install frappe-bench
-          bench init --skip-redis-config-generation --skip-assets --python "$(which python)" ~/frappe-bench
+          mkdir -p ~/frappe-bench
+          cd ~/frappe-bench
+          bench init --skip-redis-config-generation --skip-assets .
           mariadb --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL character_set_server = 'utf8mb4'"
           mariadb --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
-        env:
-          PYTHONPATH: /home/runner/frappe-bench/apps
       - name: Install App
-        working-directory: /home/runner/frappe-bench
         run: |
+          source ~/frappe-env/bin/activate
+          cd ~/frappe-bench
           bench get-app al_homaidi $GITHUB_WORKSPACE
           bench setup requirements --dev
           bench new-site --db-root-password root --admin-password admin test_site
@@ -89,10 +104,10 @@ jobs:
           bench build
         env:
           CI: 'Yes'
-          PYTHONPATH: /home/runner/frappe-bench/apps
       - name: Run Tests
-        working-directory: /home/runner/frappe-bench
         run: |
+          source ~/frappe-env/bin/activate
+          cd ~/frappe-bench
           bench --site test_site set-config allow_tests true
           bench --site test_site run-tests --app al_homaidi
         env:
