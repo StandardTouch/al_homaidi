@@ -21,7 +21,7 @@
               },
           },
       }"
-      row-key="name"
+      row-key="shop_name"
       />
    </div>
  </div>
@@ -30,7 +30,6 @@
 <script setup>
 import { ListView } from 'frappe-ui';
 import { computed } from 'vue';
-import dayjs from '@/utils/dayjs';
 import { formatNumber } from '@/utils';
 
 const props = defineProps({
@@ -45,24 +44,22 @@ const props = defineProps({
 })
 
 const columns = [
-    { label: 'Shop Name', key: 'shop', width: '150px', minWidth: '150px' },
+    { label: 'Shop Name', key: 'shop_name', width: '150px', minWidth: '150px' },
+    { label: 'Area (sqm)', key: 'area', width: '120px', minWidth: '100px' },
     { label: 'Base Rent', key: 'base_rent', width: '120px', minWidth: '100px' },
     { label: 'Payment Term', key: 'payment_term', width: '140px', minWidth: '120px' },
-    { label: 'Total Amount Incl Vat', key: 'total_amount_including_vat', width: '180px', minWidth: '150px' },
+    { label: 'Total Amount Incl VAT', key: 'total_amount_including_vat', width: '180px', minWidth: '150px' },
     { label: 'Balance Amount', key: 'balance_amount', width: '150px', minWidth: '130px' },
-    { label: 'Created At', key: 'creation', width: '120px', minWidth: '100px' },
-    { label: 'Updated At', key: 'modified', width: '120px', minWidth: '100px' },
 ]
 
 const rows = computed(() => {
     
     const formatRow = (item) => ({
         ...item,
-        base_rent: formatNumber(item.base_rent),
-        total_amount_including_vat: formatNumber(item.total_amount_including_vat),
-        balance_amount: formatNumber(item.balance_amount),
-        creation: item.creation ? dayjs(item.creation).format('DD/MM/YYYY') : '',
-        modified: item.modified ? dayjs(item.modified).format('DD/MM/YYYY') : '',
+        area: item.area ? formatNumber(item.area) : '0',
+        base_rent: formatNumber(item.base_rent || 0),
+        total_amount_including_vat: formatNumber(item.total_amount_including_vat || 0),
+        balance_amount: formatNumber(item.balance_amount || 0),
     })
     
     // Ensure we always return an array

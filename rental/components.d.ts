@@ -10,6 +10,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AppSidebar: typeof import('./src/components/Sidebar/AppSidebar.vue')['default']
     CollapseSidebar: typeof import('./src/components/Icons/CollapseSidebar.vue')['default']
+    CreateRent: typeof import('./src/components/Shop/CreateRent.vue')['default']
     CreateShop: typeof import('./src/components/Shop/CreateShop.vue')['default']
     DashboardStats: typeof import('./src/components/DashboardStats.vue')['default']
     DesktopLayout: typeof import('./src/components/DesktopLayout.vue')['default']
@@ -18,6 +19,7 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     ShopListingTable: typeof import('./src/components/Shop/ShopListingTable.vue')['default']
+    ShopRentsListingTable: typeof import('./src/components/Shop/ShopRentsListingTable.vue')['default']
     SidebarLink: typeof import('./src/components/Sidebar/SidebarLink.vue')['default']
     UserDropdown: typeof import('./src/components/Sidebar/UserDropdown.vue')['default']
   }

@@ -65,7 +65,7 @@ onMounted(() => {
                 label: 'Shop Rents',
                 icon: 'Banknote',
                 to: '/shop-rents',
-                activeFor: ['Shop Rents']
+                activeFor: ['ShopRentsList']
             },
             {
                 label: 'Finance Report',

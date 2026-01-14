@@ -41,14 +41,23 @@
 				All Stores
 			</div>
 			<div class="flex flex-col space-y-3 lg:space-y-0 lg:flex-row lg:items-center lg:space-x-4">
-				<div class="grid grid-cols-2 gap-2">
+				<div class="grid grid-cols-3 gap-2">
 					<FormControl
 						v-model="title"
 						:placeholder="'Search by Name'"
 						type="text"
 						class="min-w-40 lg:min-w-0 lg:w-32 xl:w-40"
-						
+						@update:modelValue="updateFilters()"
 					/>
+					<div class="min-w-40 lg:min-w-0 lg:w-32 xl:w-40">
+						<Select
+							v-if="paymentTermOptions.length"
+							v-model="paymentTerm"
+							:options="paymentTermOptions"
+							:placeholder="'Payment Term'"
+							@update:modelValue="updateFilters()"
+						/>
+					</div>
 					<div class="min-w-40 lg:min-w-0 lg:w-32 xl:w-40">
 						<Select
 							v-if="statusOptions.length"
@@ -82,9 +91,10 @@ import CreateShop from '@/components/Shop/CreateShop.vue';
 import { ref, onMounted } from 'vue'
 import router from '@/router'
 
-const filters = ref({})
+const filters = ref([])
 const title = ref('')
 const status = ref('')
+const paymentTerm = ref('')
 
 const statusOptions = ref([
 	{
@@ -95,6 +105,21 @@ const statusOptions = ref([
 		label: 'Inactive',
 		value: 'Inactive',
 	},
+]);
+
+const paymentTermOptions = ref([
+	{
+		label: 'All',
+		value: '',
+	},
+	{
+		label: 'Once a Year',
+		value: 'Once a Year',
+	},
+	{
+		label: 'Twice a Year',
+		value: 'Twice a Year',
+	}
 ]);
 
 const breadcrumbs = ref([
@@ -119,7 +144,33 @@ const onClickCreateShop = () => {
 const fetchShopListings = async () => {
 	loading.value = true
 	try {
-		const response = await fetch('https://testhomaidi.k.frappe.cloud/api/resource/Rent?fields=["*"]', {
+		// Build filters array
+		const filterArray = []
+		if (paymentTerm.value) {
+			filterArray.push(['payment_term', '=', paymentTerm.value])
+		}
+		if (title.value) {
+			filterArray.push(['shop_name', 'like', `%${title.value}%`])
+		}
+		if (status.value) {
+			filterArray.push(['status', '=', status.value])
+		}
+
+		// Build query parameters
+		const params = new URLSearchParams()
+		
+		// Add filters if any
+		if (filterArray.length > 0) {
+			params.append('filters', JSON.stringify(filterArray))
+		}
+		
+		// Add fields parameter
+		const fields = ['shop_name', 'area', 'base_rent', 'total_amount_including_vat', 'balance_amount', 'payment_term']
+		params.append('fields', JSON.stringify(fields))
+
+		const url = `https://testhomaidi.k.frappe.cloud/api/resource/Shop${params.toString() ? `?${params.toString()}` : ''}`
+		
+		const response = await fetch(url, {
 			method: 'GET',
 			headers: {
 				'Authorization': `token 7bb9da8a62f5b38:b41b1d78a86f197`,
@@ -139,6 +190,7 @@ const fetchShopListings = async () => {
 		} 
 	} catch (error) {
 		shopListingsData.value = []
+		console.error('Error fetching shop listings:', error)
 	} finally {
 		loading.value = false
 	}
@@ -154,25 +206,8 @@ const updateFilters = () => {
 }
 
 const reCheckFilterValues = () => {
-	updateTitleFilter()
-	updateStatusFilter()
+	fetchShopListings()
 	setQueryParams()
-}
-
-const updateTitleFilter = () => {
-	if (title.value) {
-		filters.value['title'] = ['like', `%${title.value}%`]
-	} else {
-		delete filters.value.title
-	}
-}
-
-const updateStatusFilter = () => {
-	if (status.value) {
-		filters.value['status'] = ['=', status.value]
-	} else {
-		delete filters.value.status
-	}
 }
 
 const setQueryParams = () => {
@@ -180,6 +215,7 @@ const setQueryParams = () => {
 	let filterKeys = {
 		title: title.value,
 		status: status.value,
+		payment_term: paymentTerm.value,
 	}
 	Object.keys(filterKeys).forEach(key => {
 		if (filterKeys[key]) {
@@ -188,10 +224,11 @@ const setQueryParams = () => {
 			queries.delete(key)
 		}
 	})
+	const queryString = queries.toString()
 	history.replaceState(
 		{},
 		'',
-		`${location.pathname}${queries.size() > 0 ? `?${queries.toString()}` : ''}`
+		`${location.pathname}${queryString ? `?${queryString}` : ''}`
 	)
 }
 </script>
