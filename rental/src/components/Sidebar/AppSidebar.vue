@@ -71,7 +71,7 @@ onMounted(() => {
                 label: 'Finance Report',
                 icon: 'BarChart',
                 to: '/finance-report',
-                activeFor: ['Finance Report']
+                activeFor: ['FinanceReport']
             },
             {
                 label: 'Settings',

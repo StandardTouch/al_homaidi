@@ -1,24 +1,7 @@
 <template>
 	<header class="sticky flex items-center justify-between top-0 z-10 border-b bg-surface-white px-3 py-2.5 sm:px-5">
 		<Breadcrumbs :items="breadcrumbs" />
-		<Dropdown :options="[
-			{
-				label: 'New Shop',
-				icon: 'users',
-				onClick() {
-					onClickCreateShop()
-				},
-			},
-			{
-				label: 'Import Shops',
-				icon: 'upload',
-				onClick() {
-					router.push({
-						name: 'BulkShopsImport',
-					})
-				},
-			},
-		]">
+		<Dropdown :options="dropdownOptions">
 			<template v-slot="{ open }">
 				<Button variant="solid">
 					<template #prefix>
@@ -70,10 +53,21 @@
 				</div>
 			</div>
 		</div>
-		<ShopListingTable :items="shopListingsData" :loading="loading" />
+		<ShopListingTable 
+			:items="filteredShops" 
+			:shopRents="shopRentsData"
+			:loading="loading"
+			@edit="handleEditShop"
+			@delete="handleDeleteShop"
+		/>
 	</div>
 	<CreateShop
 		v-model="showCreateShopModal"
+		:shopData="selectedShop"
+		:onSuccess="fetchShopListings"
+	/>
+	<BulkImportShops
+		v-model="showBulkImportModal"
 		:onSuccess="fetchShopListings"
 	/>
 </template>
@@ -83,13 +77,17 @@ import {
 	Button,
 	Dropdown,
 	Select,
-	FormControl
+	FormControl,
+	Dialog,
+	toast,
 } from 'frappe-ui'
 import { ChevronDown, Plus } from 'lucide-vue-next'
 import ShopListingTable from '@/components/Shop/ShopListingTable.vue';
 import CreateShop from '@/components/Shop/CreateShop.vue';
-import { ref, onMounted } from 'vue'
+import BulkImportShops from '@/components/Shop/BulkImportShops.vue';
+import { ref, onMounted, computed } from 'vue'
 import router from '@/router'
+import { getShops, deleteShop, getShopRents } from '@/utils/dataService'
 
 const filters = ref([])
 const title = ref('')
@@ -134,63 +132,85 @@ const breadcrumbs = ref([
 ])
 
 const shopListingsData = ref([])
+const shopRentsData = ref([])
 const loading = ref(false)
 const showCreateShopModal = ref(false)
+const showBulkImportModal = ref(false)
+const selectedShop = ref(null)
+
+const dropdownOptions = computed(() => [
+	{
+		label: 'New Shop',
+		icon: 'users',
+		onClick() {
+			onClickCreateShop()
+		},
+	},
+	{
+		label: 'Bulk Import Shops',
+		icon: 'upload',
+		onClick() {
+			showBulkImportModal.value = true
+		},
+	},
+])
+
+const filteredShops = computed(() => {
+	let shops = [...shopListingsData.value]
+	
+	// Filter by shop name
+	if (title.value) {
+		shops = shops.filter(shop => 
+			shop.shop_name?.toLowerCase().includes(title.value.toLowerCase())
+		)
+	}
+	
+	// Filter by term type
+	if (paymentTerm.value) {
+		shops = shops.filter(shop => shop.term_type === paymentTerm.value)
+	}
+	
+	return shops
+})
 
 const onClickCreateShop = () => {
+	selectedShop.value = null
 	showCreateShopModal.value = true
+}
+
+const handleEditShop = (shop) => {
+	selectedShop.value = shop
+	showCreateShopModal.value = true
+}
+
+const handleDeleteShop = async (shop) => {
+	if (!confirm(`Are you sure you want to delete "${shop.shop_name}"?`)) {
+		return
+	}
+	
+	try {
+		await deleteShop(shop.id)
+		toast.success('Shop deleted successfully')
+		fetchShopListings()
+	} catch (error) {
+		toast.error(error.message || 'Failed to delete shop')
+	}
 }
 
 const fetchShopListings = async () => {
 	loading.value = true
 	try {
-		// Build filters array
-		const filterArray = []
-		if (paymentTerm.value) {
-			filterArray.push(['payment_term', '=', paymentTerm.value])
-		}
-		if (title.value) {
-			filterArray.push(['shop_name', 'like', `%${title.value}%`])
-		}
-		if (status.value) {
-			filterArray.push(['status', '=', status.value])
-		}
-
-		// Build query parameters
-		const params = new URLSearchParams()
-		
-		// Add filters if any
-		if (filterArray.length > 0) {
-			params.append('filters', JSON.stringify(filterArray))
-		}
-		
-		// Add fields parameter
-		const fields = ['shop_name', 'area', 'base_rent', 'total_amount_including_vat', 'balance_amount', 'payment_term']
-		params.append('fields', JSON.stringify(fields))
-
-		const url = `https://testhomaidi.k.frappe.cloud/api/resource/Shop${params.toString() ? `?${params.toString()}` : ''}`
-		
-		const response = await fetch(url, {
-			method: 'GET',
-			headers: {
-				'Authorization': `token 7bb9da8a62f5b38:b41b1d78a86f197`,
-				'Content-Type': 'application/json',
-			},
-		})
-
-		if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`)
-		}
-
-		const data = await response.json()
-		
-		// Frappe API returns { data: [...] }, so extract the array
-		if (data && data.data && Array.isArray(data.data)) {
-			shopListingsData.value = data.data
-		} 
+		const [shops, shopRents] = await Promise.all([
+			getShops(),
+			getShopRents()
+		])
+		shopListingsData.value = shops || []
+		shopRentsData.value = shopRents || []
 	} catch (error) {
 		shopListingsData.value = []
+		shopRentsData.value = []
 		console.error('Error fetching shop listings:', error)
+		toast.error('Failed to load shops')
 	} finally {
 		loading.value = false
 	}
@@ -200,13 +220,11 @@ onMounted(() => {
 	fetchShopListings()
 })
 
-
 const updateFilters = () => {
 	reCheckFilterValues()
 }
 
 const reCheckFilterValues = () => {
-	fetchShopListings()
 	setQueryParams()
 }
 

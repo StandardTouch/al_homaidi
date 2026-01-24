@@ -9,9 +9,12 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AppSidebar: typeof import('./src/components/Sidebar/AppSidebar.vue')['default']
+    BulkImportShops: typeof import('./src/components/Shop/BulkImportShops.vue')['default']
     CollapseSidebar: typeof import('./src/components/Icons/CollapseSidebar.vue')['default']
+    ConfirmPayment: typeof import('./src/components/Shop/ConfirmPayment.vue')['default']
     CreateRent: typeof import('./src/components/Shop/CreateRent.vue')['default']
     CreateShop: typeof import('./src/components/Shop/CreateShop.vue')['default']
+    CreateUser: typeof import('./src/components/User/CreateUser.vue')['default']
     DashboardStats: typeof import('./src/components/DashboardStats.vue')['default']
     DesktopLayout: typeof import('./src/components/DesktopLayout.vue')['default']
     EditProfile: typeof import('./src/components/Modals/EditProfile.vue')['default']
@@ -22,5 +25,6 @@ declare module 'vue' {
     ShopRentsListingTable: typeof import('./src/components/Shop/ShopRentsListingTable.vue')['default']
     SidebarLink: typeof import('./src/components/Sidebar/SidebarLink.vue')['default']
     UserDropdown: typeof import('./src/components/Sidebar/UserDropdown.vue')['default']
+    UsersListingTable: typeof import('./src/components/User/UsersListingTable.vue')['default']
   }
 }

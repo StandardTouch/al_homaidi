@@ -15,7 +15,7 @@
 					<template #prefix>
 						<Plus class="h-4 w-4 stroke-1.5" />
 					</template>
-					{{ 'Create' }}
+					{{ 'Create Shop Rent' }}
 					<template #suffix>
 						<ChevronDown :class="[
 							'w-4 h-4 stroke-1.5 ml-1 transform transition-transform',
@@ -61,11 +61,23 @@
 				</div>
 			</div>
 		</div>
-		<ShopRentsListingTable :items="rentListingsData" :loading="loading" />
+		<ShopRentsListingTable 
+			:items="filteredRents" 
+			:loading="loading"
+			@payNow="handlePayNow"
+			@edit="handleEditRent"
+			@delete="handleDeleteRent"
+		/>
 	</div>
 	<CreateRent
 		v-model="showCreateRentModal"
+		:rentData="selectedRent"
 		:onSuccess="fetchRentListings"
+	/>
+	<ConfirmPayment
+		v-model="showConfirmPaymentModal"
+		:rentData="selectedRentForPayment"
+		@confirm="handleConfirmPayment"
 	/>
 </template>
 <script setup>
@@ -74,12 +86,16 @@ import {
 	Button,
 	Dropdown,
 	Select,
-	FormControl
+	FormControl,
+	Dialog,
+	toast,
 } from 'frappe-ui'
 import { ChevronDown, Plus } from 'lucide-vue-next'
 import ShopRentsListingTable from '@/components/Shop/ShopRentsListingTable.vue';
 import CreateRent from '@/components/Shop/CreateRent.vue';
-import { ref, onMounted } from 'vue'
+import ConfirmPayment from '@/components/Shop/ConfirmPayment.vue';
+import { ref, onMounted, computed } from 'vue'
+import { getShopRents, updateShopRent, deleteShopRent } from '@/utils/dataService'
 
 const filters = ref([])
 const name = ref('')
@@ -88,16 +104,24 @@ const paymentStatus = ref('')
 
 const paymentStatusOptions = ref([
 	{
+		label: 'All',
+		value: '',
+	},
+	{
 		label: 'Paid',
 		value: 'Paid',
 	},
 	{
-		label: 'Unpaid',
-		value: 'Unpaid',
+		label: 'Un Paid',
+		value: 'Un Paid',
 	},
 ]);
 
 const paymentTermOptions = ref([
+	{
+		label: 'All',
+		value: '',
+	},
 	{
 		label: 'Once a Year',
 		value: 'Once a Year',
@@ -122,61 +146,87 @@ const breadcrumbs = ref([
 const rentListingsData = ref([])
 const loading = ref(false)
 const showCreateRentModal = ref(false)
+const showConfirmPaymentModal = ref(false)
+const selectedRent = ref(null)
+const selectedRentForPayment = ref(null)
+
+const filteredRents = computed(() => {
+	let rents = [...rentListingsData.value]
+	
+	// Filter by shop name
+	if (name.value) {
+		rents = rents.filter(rent => 
+			rent.shop_name?.toLowerCase().includes(name.value.toLowerCase()) ||
+			rent.shop_location?.toLowerCase().includes(name.value.toLowerCase())
+		)
+	}
+	
+	// Filter by payment status
+	if (paymentStatus.value) {
+		rents = rents.filter(rent => rent.payment_status === paymentStatus.value)
+	}
+	
+	return rents
+})
 
 const onClickCreateRent = () => {
+	selectedRent.value = null
 	showCreateRentModal.value = true
+}
+
+const handlePayNow = (rent) => {
+	selectedRentForPayment.value = rent
+	showConfirmPaymentModal.value = true
+}
+
+const handleConfirmPayment = async (paymentData) => {
+	if (!selectedRentForPayment.value) {
+		return
+	}
+	
+	try {
+		await updateShopRent(selectedRentForPayment.value.id, {
+			payment_status: 'Paid',
+			paid_date: paymentData.paid_date,
+			reason: paymentData.reason || null,
+		})
+		toast.success('Payment confirmed successfully')
+		showConfirmPaymentModal.value = false
+		selectedRentForPayment.value = null
+		fetchRentListings()
+	} catch (error) {
+		toast.error(error.message || 'Failed to confirm payment')
+	}
+}
+
+const handleEditRent = (rent) => {
+	selectedRent.value = rent
+	showCreateRentModal.value = true
+}
+
+const handleDeleteRent = async (rent) => {
+	if (!confirm(`Are you sure you want to delete this rent record?`)) {
+		return
+	}
+	
+	try {
+		await deleteShopRent(rent.id)
+		toast.success('Rent record deleted successfully')
+		fetchRentListings()
+	} catch (error) {
+		toast.error(error.message || 'Failed to delete rent record')
+	}
 }
 
 const fetchRentListings = async () => {
 	loading.value = true
 	try {
-		// Build filters array
-		const filterArray = []
-		if (paymentTerm.value) {
-			filterArray.push(['payment_term', '=', paymentTerm.value])
-		}
-		if (name.value) {
-			filterArray.push(['name', 'like', `%${name.value}%`])
-		}
-		if (paymentStatus.value) {
-			filterArray.push(['payment_status', '=', paymentStatus.value])
-		}
-
-		// Build query parameters
-		const params = new URLSearchParams()
-		
-		// Add filters if any
-		if (filterArray.length > 0) {
-			params.append('filters', JSON.stringify(filterArray))
-		}
-		
-		// Add fields parameter
-		const fields = ['name', 'period_number', 'payment_status', 'base_rent', 'total_amount_including_vat', 'payment_term', 'paid_amount']
-		params.append('fields', JSON.stringify(fields))
-
-		const url = `https://testhomaidi.k.frappe.cloud/api/resource/Rent${params.toString() ? `?${params.toString()}` : ''}`
-		
-		const response = await fetch(url, {
-			method: 'GET',
-			headers: {
-				'Authorization': `token 7bb9da8a62f5b38:b41b1d78a86f197`,
-				'Content-Type': 'application/json',
-			},
-		})
-
-		if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`)
-		}
-
-		const data = await response.json()
-		
-		// Frappe API returns { data: [...] }, so extract the array
-		if (data && data.data && Array.isArray(data.data)) {
-			rentListingsData.value = data.data
-		} 
+		const rents = await getShopRents()
+		rentListingsData.value = rents || []
 	} catch (error) {
 		rentListingsData.value = []
 		console.error('Error fetching rent listings:', error)
+		toast.error('Failed to load shop rents')
 	} finally {
 		loading.value = false
 	}
@@ -191,7 +241,6 @@ const updateFilters = () => {
 }
 
 const reCheckFilterValues = () => {
-	fetchRentListings()
 	setQueryParams()
 }
 

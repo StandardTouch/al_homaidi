@@ -9,7 +9,7 @@
 		<template #body-header>
 			<div class="flex items-center mb-5">
 				<div class="text-2xl font-semibold leading-6 text-ink-gray-9">
-					Create Rent Payment
+					{{ isEditMode ? 'Edit Shop Rent' : 'Create Shop Rent' }}
 				</div>
 			</div>
 		</template>
@@ -18,37 +18,54 @@
 				<div class="grid grid-cols-2 gap-10">
 					<div class="col-span-2 lg:col-span-1">
 						<FormControl
-							v-model="rentPayment.shop"
+							v-model="rentPayment.shop_id"
 							type="select"
 							:options="shopOptions"
-							label="Shop"
+							label="Shop Name (Location + Area sqm)"
 							:loading="loadingShops"
 							:placeholder="loadingShops ? 'Loading shops...' : 'Select a shop'"
+							:required="true"
+							:disabled="isEditMode"
 						/>
 					</div>
 					<div class="col-span-2 lg:col-span-1">
-						<FormControl
-							v-model="rentPayment.amount"
-							label="Amount"
-							type="number"
-							:step="0.01"
-						/>
-					</div>
-					<div class="col-span-2 lg:col-span-1">
-                        <DatePicker
-                            v-model="rentPayment.payment_date"
-                            variant="subtle"
-                            placeholder="Select payment date"
-                            :disabled="false"
-                            label="Payment Date"
-                        />
+						<div class="p-2">
+							<DatePicker
+								v-model="rentPayment.start_date"
+								variant="subtle"
+								placeholder="Select start date"
+								:disabled="false"
+								label="Start Date"
+								:required="true"
+							/>
+						</div>
 					</div>
 					<div class="col-span-2 lg:col-span-1">
 						<FormControl
-							v-model="rentPayment.payment_method"
+							v-model="rentPayment.payment_status"
 							type="select"
-							:options="paymentMethodOptions"
-							label="Payment Method"
+							:options="paymentStatusOptions"
+							label="Payment Status"
+						/>
+					</div>
+					<div class="col-span-2 lg:col-span-1">
+						<div class="p-2">
+							<DatePicker
+								v-model="rentPayment.paid_date"
+								variant="subtle"
+								placeholder="Select paid date"
+								:disabled="false"
+								label="Paid Date"
+							/>
+						</div>
+					</div>
+					<div class="col-span-2">
+						<FormControl
+							v-model="rentPayment.reason"
+							type="textarea"
+							label="Reason"
+							:rows="3"
+							placeholder="Enter reason (optional)"
 						/>
 					</div>
 				</div>
@@ -57,7 +74,7 @@
 		<template #actions="{ close }">
 			<div class="pb-5 float-right">
 				<Button variant="solid" @click="saveRentPayment(close)" :loading="loading">
-					Save
+					{{ isEditMode ? 'Update' : 'Save' }}
 				</Button>
 			</div>
 		</template>
@@ -71,7 +88,8 @@ import {
 	DatePicker,
 	toast,
 } from 'frappe-ui'
-import { reactive, ref, watch, onMounted } from 'vue'
+import { reactive, ref, watch, onMounted, computed } from 'vue'
+import { getShops, getShopById, addShopRent, addShopRents, updateShopRent } from '@/utils/dataService'
 
 const props = defineProps({
 	modelValue: {
@@ -82,79 +100,60 @@ const props = defineProps({
 		type: Function,
 		default: () => {},
 	},
+	rentData: {
+		type: Object,
+		default: null,
+	},
 })
 
 const emit = defineEmits(['update:modelValue'])
 
+const isEditMode = computed(() => !!props.rentData)
+
 watch(() => props.modelValue, (newVal) => {
 	if (!newVal) {
-		// Reset form when modal closes
-		rentPayment.shop = ''
-		rentPayment.amount = null
-		rentPayment.payment_date = null
-		rentPayment.payment_method = ''
+		resetForm()
+	} else if (props.rentData) {
+		// Load rent data for editing
+		rentPayment.shop_id = props.rentData.shop_id || ''
+		rentPayment.start_date = props.rentData.start_date || null
+		rentPayment.payment_status = props.rentData.payment_status || 'Un Paid'
+		rentPayment.paid_date = props.rentData.paid_date || null
+		rentPayment.reason = props.rentData.reason || ''
 	}
 })
 
 const rentPayment = reactive({
-	shop: '',
-	amount: null,
-	payment_date: null,
-	payment_method: '',
+	shop_id: '',
+	start_date: null,
+	payment_status: 'Un Paid',
+	paid_date: null,
+	reason: '',
 })
 
 const loading = ref(false)
 const loadingShops = ref(false)
 const shopOptions = ref([])
 
-const paymentMethodOptions = [
+const paymentStatusOptions = [
 	{
-		label: 'Cash',
-		value: 'Cash',
+		label: 'Paid',
+		value: 'Paid',
 	},
 	{
-		label: 'Bank Transfer',
-		value: 'Bank Transfer',
-	},
-	{
-		label: 'Cheque',
-		value: 'Cheque',
-	},
-	{
-		label: 'Credit Card',
-		value: 'Credit Card',
+		label: 'Un Paid',
+		value: 'Un Paid',
 	},
 ]
 
 const fetchShops = async () => {
 	loadingShops.value = true
 	try {
-		const fields = ['name']
-		const params = new URLSearchParams()
-		params.append('fields', JSON.stringify(fields))
-
-		const url = `https://testhomaidi.k.frappe.cloud/api/resource/Shop${params.toString() ? `?${params.toString()}` : ''}`
-		
-		const response = await fetch(url, {
-			method: 'GET',
-			headers: {
-				'Authorization': `token 7bb9da8a62f5b38:b41b1d78a86f197`,
-				'Content-Type': 'application/json',
-			},
-		})
-
-		if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`)
-		}
-
-		const data = await response.json()
-		
-		if (data && data.data && Array.isArray(data.data)) {
-			shopOptions.value = data.data.map(shop => ({
-				label: shop.name,
-				value: shop.name,
-			}))
-		}
+		const shops = await getShops()
+		shopOptions.value = shops.map(shop => ({
+			label: `${shop.shop_name} (${shop.location} + ${shop.area_sqm} sqm)`,
+			value: shop.id,
+		}))
 	} catch (error) {
 		console.error('Error fetching shops:', error)
 		toast.error('Failed to load shops')
@@ -163,66 +162,151 @@ const fetchShops = async () => {
 	}
 }
 
-onMounted(() => {
-	fetchShops()
-})
+const resetForm = () => {
+	rentPayment.shop_id = ''
+	rentPayment.start_date = null
+	rentPayment.payment_status = 'Un Paid'
+	rentPayment.paid_date = null
+	rentPayment.reason = ''
+}
+
+const calculateEndDate = (startDate, months) => {
+	const date = new Date(startDate)
+	date.setMonth(date.getMonth() + months)
+	return date.toISOString().split('T')[0]
+}
 
 const saveRentPayment = async (close) => {
-	if (!rentPayment.shop) {
+	// Validation
+	if (!rentPayment.shop_id) {
 		toast.error('Shop is required')
 		return
 	}
-	if (!rentPayment.amount) {
-		toast.error('Amount is required')
-		return
-	}
-	if (!rentPayment.payment_date) {
-		toast.error('Payment date is required')
-		return
-	}
-	if (!rentPayment.payment_method) {
-		toast.error('Payment method is required')
+	if (!rentPayment.start_date) {
+		toast.error('Start Date is required')
 		return
 	}
 
 	loading.value = true
 	try {
-		const response = await fetch('https://testhomaidi.k.frappe.cloud/api/method/frappe.client.insert', {
-			method: 'POST',
-			headers: {
-				'Authorization': 'token 7bb9da8a62f5b38:b41b1d78a86f197',
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({
-				doc: {
-					doctype: 'Rent Payment',
-					shop: rentPayment.shop,
-					amount: rentPayment.amount ? parseFloat(rentPayment.amount) : null,
-					payment_date: rentPayment.payment_date || null,
-					payment_method: rentPayment.payment_method,
-				},
-			}),
-		})
+		if (isEditMode.value) {
+			// Update existing rent record - just update the fields, don't recalculate dates
+			const shop = await getShopById(props.rentData.shop_id)
+			if (!shop) {
+				throw new Error('Shop not found')
+			}
+			
+			// Calculate end date based on start date and shop term type
+			const startDate = new Date(rentPayment.start_date)
+			let endDate = props.rentData.end_date
+			
+			// Recalculate end date if start date changed
+			if (shop.term_type === 'Once a Year') {
+				endDate = calculateEndDate(startDate, 12)
+			} else if (shop.term_type === 'Twice a Year') {
+				// For twice a year, calculate 6 months from start date
+				endDate = calculateEndDate(startDate, 6)
+			}
+			
+			// Calculate total amount based on term type
+			let totalAmount = shop.total_amount || 0
+			if (shop.term_type === 'Twice a Year') {
+				totalAmount = totalAmount / 2 // Divide by 2 for each 6-month period
+			}
+			
+			await updateShopRent(props.rentData.id, {
+				start_date: rentPayment.start_date,
+				end_date: endDate,
+				total_amount: totalAmount,
+				payment_status: rentPayment.payment_status,
+				paid_date: rentPayment.paid_date || null,
+				reason: rentPayment.reason || null,
+			})
+			toast.success('Shop rent updated successfully')
+		} else {
+			// Create new rent records
+			const shop = await getShopById(rentPayment.shop_id)
+			if (!shop) {
+				throw new Error('Shop not found')
+			}
 
-		if (!response.ok) {
-			const errorData = await response.json().catch(() => ({}))
-			throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+			const startDate = new Date(rentPayment.start_date)
+			let rentRecords = []
+			
+			// Calculate total amount based on term type
+			let totalAmount = shop.total_amount || 0
+			if (shop.term_type === 'Twice a Year') {
+				totalAmount = totalAmount / 2 // Divide by 2 for each 6-month period
+			}
+
+			if (shop.term_type === 'Once a Year') {
+				// Create one record for the full year
+				const endDate = calculateEndDate(startDate, 12)
+				rentRecords.push({
+					shop_id: shop.id,
+					shop_name: shop.shop_name,
+					shop_location: shop.location,
+					shop_area: shop.area_sqm,
+					start_date: rentPayment.start_date,
+					end_date: endDate,
+					total_amount: totalAmount,
+					payment_status: rentPayment.payment_status,
+					paid_date: rentPayment.paid_date || null,
+					reason: rentPayment.reason || null,
+				})
+			} else if (shop.term_type === 'Twice a Year') {
+				// Create two records: first 6 months and second 6 months
+				const firstEndDate = calculateEndDate(startDate, 6)
+				const secondStartDate = calculateEndDate(startDate, 6)
+				const secondEndDate = calculateEndDate(secondStartDate, 6)
+				
+				rentRecords.push({
+					shop_id: shop.id,
+					shop_name: shop.shop_name,
+					shop_location: shop.location,
+					shop_area: shop.area_sqm,
+					start_date: rentPayment.start_date,
+					end_date: firstEndDate,
+					total_amount: totalAmount,
+					payment_status: rentPayment.payment_status,
+					paid_date: rentPayment.paid_date || null,
+					reason: rentPayment.reason || null,
+				})
+				
+				rentRecords.push({
+					shop_id: shop.id,
+					shop_name: shop.shop_name,
+					shop_location: shop.location,
+					shop_area: shop.area_sqm,
+					start_date: secondStartDate,
+					end_date: secondEndDate,
+					total_amount: totalAmount,
+					payment_status: rentPayment.payment_status,
+					paid_date: rentPayment.paid_date || null,
+					reason: rentPayment.reason || null,
+				})
+			}
+
+			// Create new rent records
+			if (rentRecords.length === 1) {
+				await addShopRent(rentRecords[0])
+			} else {
+				await addShopRents(rentRecords)
+			}
+			toast.success(`Shop rent${rentRecords.length > 1 ? 's' : ''} created successfully`)
 		}
 
-		const data = await response.json()
-		toast.success('Rent payment created successfully')
 		close()
-		// Reset form
-		rentPayment.shop = ''
-		rentPayment.amount = null
-		rentPayment.payment_date = null
-		rentPayment.payment_method = ''
-		// Call onSuccess callback to refetch rent listings
+		resetForm()
 		props.onSuccess()
 	} catch (error) {
-		toast.error(error.message || 'Failed to create rent payment')
+		toast.error(error.message || `Failed to ${isEditMode.value ? 'update' : 'create'} shop rent`)
 	} finally {
 		loading.value = false
 	}
 }
+
+onMounted(() => {
+	fetchShops()
+})
 </script>
